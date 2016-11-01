@@ -67,8 +67,7 @@ function PointerEvent(inType, inDict) {
   // Spec requires that pointers without pressure specified use 0.5 for down
   // state and 0 for up state.
   var pressure = 0;
-
-  if (inDict.pressure && e.buttons) {
+  if (inDict.pressure) {
     pressure = inDict.pressure;
   } else {
     pressure = e.buttons ? 0.5 : 0;

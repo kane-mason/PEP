@@ -4,7 +4,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-git-authors');
   grunt.loadNpmTasks('grunt-jscs');
-  grunt.loadNpmTasks('grunt-selenium-standalone');
   grunt.loadNpmTasks('intern');
 
   var pkg = require('./package');
@@ -31,11 +30,6 @@ module.exports = function(grunt) {
   var allFiles = srcFiles.concat(buildFiles).concat(testFiles);
 
   grunt.initConfig({
-    authors: {
-      prior: [
-        'Google, Inc.'
-      ]
-    },
     uglify: {
       pointerevents: {
         options: {
@@ -61,31 +55,11 @@ module.exports = function(grunt) {
         }
       }
     },
-    "selenium_standalone": {
-        options: {
-          stopOnExit: true
-        },
-        pointerevents: {
-            seleniumVersion: '2.53.0',
-            seleniumDownloadURL: 'http://selenium-release.storage.googleapis.com',
-            drivers: {
-                chrome: {
-                  version: '2.25',
-                  arch: process.arch,
-                  baseURL: 'http://chromedriver.storage.googleapis.com'
-                },
-                ie: {
-                  version: '2.53',
-                  arch: process.arch,
-                  baseURL: 'http://selenium-release.storage.googleapis.com'
-                }
-            }
-        }
-    },
     jscs: {
       lint: {
         options: {
-          config: true
+          config: true,
+          esnext: true
         },
         files: {
           src: allFiles
@@ -120,26 +94,30 @@ module.exports = function(grunt) {
   });
 
   grunt.registerTask('build', function() {
-    var rollup = require('rollup');
+    var esperanto = require('esperanto');
     var done = this.async();
 
     grunt.log.write('Building PEP...');
-    rollup.rollup({
-      entry: 'src/pointerevents.js'
+    esperanto.bundle({
+      base: 'src',
+      entry: 'pointerevents.js'
     }).then(function(bundle) {
-      var result = bundle.generate({
-        moduleName: 'PointerEventsPolyfill',
-        format: 'umd',
-        banner: header
+      var umd = bundle.toUmd({
+        name: 'PointerEventsPolyfill'
+
+        // sourceMap: true,
+        // sourceMapFile: 'dist/pep.js'
       });
-      grunt.file.write('dist/pep.js', result.code);
+      grunt.file.write('dist/pep.js', header + umd.code);
+
+      // grunt.file.write('dist/pep.js.map', umd.map.toString());
     }).then(
       function() {
         grunt.log.ok();
         done();
       },
       function(error) {
-        grunt.log.error(error);
+        grunt.log.error();
         done(error);
       }
     );
@@ -152,18 +130,8 @@ module.exports = function(grunt) {
     pretest().then(done);
   });
 
-  grunt.registerTask('server', [
-    'selenium_standalone:pointerevents:install',
-    'selenium_standalone:pointerevents:start'
-  ]);
   grunt.registerTask('default', ['lint', 'build', 'uglify']);
   grunt.registerTask('lint', ['jscs:lint', 'jshint']);
-  grunt.registerTask('test', [
-    'build',
-    'server',
-    'pretest',
-    'intern:pointerevents',
-    'selenium_standalone:pointerevents:stop'
-  ]);
+  grunt.registerTask('test', ['build', 'pretest', 'intern:pointerevents']);
   grunt.registerTask('ci', ['lint', 'build', 'pretest', 'intern:ci']);
 };

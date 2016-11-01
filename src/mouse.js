@@ -1,4 +1,4 @@
-import dispatcher from './dispatcher';
+import dispatcher from 'dispatcher';
 
 var pointermap = dispatcher.pointermap;
 
@@ -63,13 +63,7 @@ var mouseEvents = {
   },
   prepareButtonsForMove: function(e, inEvent) {
     var p = pointermap.get(this.POINTER_ID);
-
-    // Update buttons state after possible out-of-document mouseup.
-    if (inEvent.which === 0 || !p) {
-      e.buttons = 0;
-    } else {
-      e.buttons = p.buttons;
-    }
+    e.buttons = p ? p.buttons : 0;
     inEvent.buttons = e.buttons;
   },
   mousedown: function(inEvent) {
@@ -82,7 +76,7 @@ var mouseEvents = {
         inEvent.buttons = e.buttons;
       }
       pointermap.set(this.POINTER_ID, inEvent);
-      if (!p || p.buttons === 0) {
+      if (!p) {
         dispatcher.down(e);
       } else {
         dispatcher.move(e);
@@ -93,8 +87,6 @@ var mouseEvents = {
     if (!this.isEventSimulatedFromTouch(inEvent)) {
       var e = this.prepareEvent(inEvent);
       if (!HAS_BUTTONS) { this.prepareButtonsForMove(e, inEvent); }
-      e.button = -1;
-      pointermap.set(this.POINTER_ID, inEvent);
       dispatcher.move(e);
     }
   },
@@ -117,8 +109,8 @@ var mouseEvents = {
       // FF Ubuntu includes the lifted button in the `buttons` property on
       // mouseup.
       // https://bugzilla.mozilla.org/show_bug.cgi?id=1223366
-      e.buttons &= ~BUTTON_TO_BUTTONS[e.button];
-      if (e.buttons === 0) {
+      if (e.buttons === 0 || e.buttons === BUTTON_TO_BUTTONS[e.button]) {
+        this.cleanupMouse();
         dispatcher.up(e);
       } else {
         dispatcher.move(e);
@@ -129,8 +121,6 @@ var mouseEvents = {
     if (!this.isEventSimulatedFromTouch(inEvent)) {
       var e = this.prepareEvent(inEvent);
       if (!HAS_BUTTONS) { this.prepareButtonsForMove(e, inEvent); }
-      e.button = -1;
-      pointermap.set(this.POINTER_ID, inEvent);
       dispatcher.enterOver(e);
     }
   },
@@ -138,16 +128,15 @@ var mouseEvents = {
     if (!this.isEventSimulatedFromTouch(inEvent)) {
       var e = this.prepareEvent(inEvent);
       if (!HAS_BUTTONS) { this.prepareButtonsForMove(e, inEvent); }
-      e.button = -1;
       dispatcher.leaveOut(e);
     }
   },
   cancel: function(inEvent) {
     var e = this.prepareEvent(inEvent);
     dispatcher.cancel(e);
-    this.deactivateMouse();
+    this.cleanupMouse();
   },
-  deactivateMouse: function() {
+  cleanupMouse: function() {
     pointermap.delete(this.POINTER_ID);
   }
 };

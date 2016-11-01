@@ -62,21 +62,21 @@ function parseRepoString(string) {
 
 function getRaw(entry) {
 	return request.getAsync(options.raw(entry)).then(
-		function(res) { return _.result(res, 'body'); },
+		function(res) { return _.result(res, 1); },
 		function(err) { throw err; }
 	);
 }
 
 function getTree(entry) {
 	return request.getAsync(options.tree(entry)).then(
-		function(res) { return _.result(res, 'body.tree'); },
+		function(res) { return _.result(res, '[1].tree'); },
 		function(err) { throw err; }
 	);
 }
 
 function getFiles(tree) {
-	var pe = _.find(tree, { path: 'pointerevents' }),
-		resources = _.find(tree, { path: 'resources' });
+	var pe = _.find(tree, 'path', 'pointerevents'),
+		resources = _.find(tree, 'path', 'resources');
 
 	return Promise.all([
 		getTree(pe.url)
@@ -88,9 +88,6 @@ function getFiles(tree) {
 
 function getTests(tree) {
 	return Promise.all(_.map(tree, function(object) {
-		if (object.type === 'tree') {
-			return Promise.resolve();
-		}
 		var $raw = getRaw(object.url);
 		return $raw.then(function(raw) {
 			return fs.outputFileAsync(path.join(testPath, object.path), raw, 'utf-8');
@@ -100,7 +97,7 @@ function getTests(tree) {
 
 function getHarness(tree) {
 	return Promise.all(_.map(harnessFiles, function(hf) {
-		var object = _.find(tree, { path: hf }),
+		var object = _.find(tree, 'path', hf),
 			$raw = getRaw(object.url);
 
 		return $raw.then(function(raw) {

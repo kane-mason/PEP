@@ -1,7 +1,7 @@
-import targeting from './targeting';
-import dispatcher from './dispatcher';
-import Installer from './installer';
-import mouseEvents from './mouse';
+import targeting from 'targeting';
+import dispatcher from 'dispatcher';
+import Installer from 'installer';
+import mouseEvents from 'mouse';
 
 var captureInfo = dispatcher.captureInfo;
 var findTarget = targeting.findTarget.bind(targeting);
@@ -14,6 +14,13 @@ var CLICK_COUNT_TIMEOUT = 200;
 var ATTRIB = 'touch-action';
 var INSTALLER;
 
+// The presence of touch event handlers blocks scrolling, and so we must be careful to
+// avoid adding handlers unnecessarily.  Chrome plans to add a touch-action-delay property
+// (crbug.com/329559) to address this, and once we have that we can opt-in to a simpler
+// handler registration mechanism.  Rather than try to predict how exactly to opt-in to
+// that we'll just leave this disabled until there is a build of Chrome to test.
+var HAS_TOUCH_ACTION_DELAY = false;
+
 // handler block for native touch events
 var touchEvents = {
   events: [
@@ -23,11 +30,19 @@ var touchEvents = {
     'touchcancel'
   ],
   register: function(target) {
-    INSTALLER.enableOnSubtree(target);
+    if (HAS_TOUCH_ACTION_DELAY) {
+      dispatcher.listen(target, this.events);
+    } else {
+      INSTALLER.enableOnSubtree(target);
+    }
   },
-  unregister: function() {
+  unregister: function(target) {
+    if (HAS_TOUCH_ACTION_DELAY) {
+      dispatcher.unlisten(target, this.events);
+    } else {
 
-    // TODO(dfreedman): is it worth it to disconnect the MO?
+      // TODO(dfreedman): is it worth it to disconnect the MO?
+    }
   },
   elementAdded: function(el) {
     var a = el.getAttribute(ATTRIB);
@@ -152,12 +167,6 @@ var touchEvents = {
     e.isPrimary = this.isPrimaryTouch(inTouch);
     e.pointerType = this.POINTER_TYPE;
 
-    // forward modifier keys
-    e.altKey = cte.altKey;
-    e.ctrlKey = cte.ctrlKey;
-    e.metaKey = cte.metaKey;
-    e.shiftKey = cte.shiftKey;
-
     // forward touch preventDefaults
     var self = this;
     e.preventDefault = function() {
@@ -256,7 +265,8 @@ var touchEvents = {
       out: inPointer,
       outTarget: inPointer.target
     });
-    dispatcher.enterOver(inPointer);
+    dispatcher.over(inPointer);
+    dispatcher.enter(inPointer);
     dispatcher.down(inPointer);
   },
   touchmove: function(inEvent) {
@@ -308,7 +318,8 @@ var touchEvents = {
   upOut: function(inPointer) {
     if (!this.scrolling) {
       dispatcher.up(inPointer);
-      dispatcher.leaveOut(inPointer);
+      dispatcher.out(inPointer);
+      dispatcher.leave(inPointer);
     }
     this.cleanUpPointer(inPointer);
   },
@@ -317,7 +328,8 @@ var touchEvents = {
   },
   cancelOut: function(inPointer) {
     dispatcher.cancel(inPointer);
-    dispatcher.leaveOut(inPointer);
+    dispatcher.out(inPointer);
+    dispatcher.leave(inPointer);
     this.cleanUpPointer(inPointer);
   },
   cleanUpPointer: function(inPointer) {
@@ -347,7 +359,9 @@ var touchEvents = {
   }
 };
 
-INSTALLER = new Installer(touchEvents.elementAdded, touchEvents.elementRemoved,
-  touchEvents.elementChanged, touchEvents);
+if (!HAS_TOUCH_ACTION_DELAY) {
+  INSTALLER = new Installer(touchEvents.elementAdded, touchEvents.elementRemoved,
+    touchEvents.elementChanged, touchEvents);
+}
 
 export default touchEvents;

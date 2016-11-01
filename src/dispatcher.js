@@ -1,5 +1,5 @@
-import PointerEvent from './PointerEvent';
-import PointerMap from './pointermap';
+import PointerEvent from 'PointerEvent';
+import PointerMap from 'pointermap';
 
 var CLONE_PROPS = [
 
@@ -197,11 +197,15 @@ var dispatcher = {
   },
   leaveOut: function(event) {
     this.out(event);
-    this.propagate(event, this.leave, false);
+    if (!this.contains(event.target, event.relatedTarget)) {
+      this.leave(event);
+    }
   },
   enterOver: function(event) {
     this.over(event);
-    this.propagate(event, this.enter, true);
+    if (!this.contains(event.target, event.relatedTarget)) {
+      this.enter(event);
+    }
   },
 
   // LISTENER LOGIC
@@ -310,27 +314,13 @@ var dispatcher = {
       return capture;
     }
   },
-  propagate: function(event, fn, propagateDown) {
-    var target = event.target;
-    var targets = [];
-    while (!target.contains(event.relatedTarget) && target !== document) {
-      targets.push(target);
-      target = target.parentNode;
-    }
-    if (propagateDown) {
-      targets.reverse();
-    }
-    targets.forEach(function(target) {
-      event.target = target;
-      fn.call(this, event);
-    }, this);
-  },
   setCapture: function(inPointerId, inTarget) {
     if (this.captureInfo[inPointerId]) {
       this.releaseCapture(inPointerId);
     }
     this.captureInfo[inPointerId] = inTarget;
-    var e = new PointerEvent('gotpointercapture');
+    var e = document.createEvent('Event');
+    e.initEvent('gotpointercapture', true, false);
     e.pointerId = inPointerId;
     this.implicitRelease = this.releaseCapture.bind(this, inPointerId);
     document.addEventListener('pointerup', this.implicitRelease);
@@ -341,7 +331,8 @@ var dispatcher = {
   releaseCapture: function(inPointerId) {
     var t = this.captureInfo[inPointerId];
     if (t) {
-      var e = new PointerEvent('lostpointercapture');
+      var e = document.createEvent('Event');
+      e.initEvent('lostpointercapture', true, false);
       e.pointerId = inPointerId;
       this.captureInfo[inPointerId] = undefined;
       document.removeEventListener('pointerup', this.implicitRelease);

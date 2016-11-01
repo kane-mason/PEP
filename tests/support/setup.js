@@ -20,7 +20,6 @@ define([
         prep('pointer' + shortType, target, callback);
       }
       var e, type;
-      var buttons = shortType === 'down' ? 1 : 0;
       if (HAS_MS) {
         var cap = shortType.slice(0, 1).toUpperCase() + shortType.slice(1);
         type = 'MSPointer' + cap;
@@ -31,11 +30,11 @@ define([
         );
       } else {
         type = 'mouse' + shortType;
-        e = new MouseEvent(type, {
-          bubbles: true,
-          cancelable: true,
-          buttons: buttons
-        });
+        e = document.createEvent('MouseEvent');
+        e.initMouseEvent(
+          type, true, true, null, null, 0, 0, 0, 0, false, false,
+          false, false, 0, null
+        );
       }
       target.dispatchEvent(e);
     }
