@@ -1,5 +1,5 @@
 /*!
- * PEP v0.4.1 | https://github.com/jquery/PEP
+ * PEP v0.4.1.2 | https://github.com/jquery/PEP
  * Copyright jQuery Foundation and other contributors | http://jquery.org/license
  */
 (function (global, factory) {
