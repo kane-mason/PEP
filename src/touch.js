@@ -203,7 +203,7 @@ var touchEvents = {
         var t = inEvent.changedTouches[0];
 
         // check the intended scroll axis, and other axis
-        var a = scrollAxis === 'Y' ? 'X' : 'Y';
+        var a = scrollAxis;
         var oa = scrollAxis === 'Y' ? 'X' : 'Y';
         var da = Math.abs(t['client' + a] - this.firstXY[a]);
         var doa = Math.abs(t['client' + oa] - this.firstXY[oa]);
