@@ -924,7 +924,7 @@
   // (crbug.com/329559) to address this, and once we have that we can opt-in to a simpler
   // handler registration mechanism.  Rather than try to predict how exactly to opt-in to
   // that we'll just leave this disabled until there is a build of Chrome to test.
-  var HAS_TOUCH_ACTION_DELAY = true;
+  var HAS_TOUCH_ACTION_DELAY = false;
 
   // handler block for native touch events
   var touchEvents = {
@@ -1108,7 +1108,7 @@
           var t = inEvent.changedTouches[0];
 
           // check the intended scroll axis, and other axis
-          var a = scrollAxis === 'Y' ? 'X' : 'Y';
+          var a = scrollAxis;
           var oa = scrollAxis === 'Y' ? 'X' : 'Y';
           var da = Math.abs(t['client' + a] - this.firstXY[a]);
           var doa = Math.abs(t['client' + oa] - this.firstXY[oa]);
